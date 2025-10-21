@@ -23,13 +23,13 @@ payload = {
 # 5) Envío de la petición y manejo de errores
 def main():
     try:
-        # Decisión: timeout para evitar bloqueos si el servidor no responde.
+        # Decision: timeout para evitar bloqueos si el servidor no responde.
         resp = requests.post(OLLAMA_API, json=payload, headers=HEADERS,timeout=120)
         resp.raise_for_status() # Decision: lanza HTTPError si el status no es 2xx (200 OK)
 
         data = resp.json() # Decision: la API devuelve JSON.
 
-        print(data["message"]["content"])# Decisión: con stream=False, el texto vive en data["message"]["content"].
+        print(data["message"]["content"])# Decision: con stream=False, el texto vive en data["message"]["content"].
 
     except requests.exceptions.ConnectionError as e:
         # Error 1: servidor no disponible.
@@ -42,7 +42,7 @@ def main():
         print(f"Sugerencia: confirma el modelo con 'ollama pull {payload['model']}'.")
         print(e)
     except (KeyError, ValueError, json.JSONDecodeError) as e:
-        # Formato inesperado (p. ej., se activó stream=True por error o cambió la API).
+        # Formato inesperado (p. ej., se activo stream=True por error o cambio la API).
         print("[ERROR] Formato JSON inesperado. Asegúrate de usar stream=False y el endpoint '/api/chat'.")
         print(e)
 if __name__ == "__main__":
