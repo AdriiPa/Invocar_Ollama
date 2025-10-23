@@ -1,5 +1,10 @@
-import requests
-import json
+# prueba_a.py — Parte A (API HTTP con requests) + extras CLI, guardado .txt y tiempo
+
+import requests # Decision: librería HTTP de alto nivel para POST JSON.
+import json     # Decision: para diagnosticar/parsing y capturar JSONDecodeError.
+import argparse # Decision: manejar --model y --outfile de forma clara.
+import time     # Decision: medir tiempo total de llamada (inferir latencia total).
+from datetime import datetime # Decision: timestamp legible para el nombre del archivo.
 
 # prueba_a.py — Parte A (API HTTP con requests)
 # Decision: uso 'requests' por su sencillez y manejo de errores HTTP integrado.
