@@ -18,15 +18,30 @@ MODEL = "llama3.2"
 messages = [
     {"role": "user", "content": "Describe some of the business applications of Generative AI"}
 ]
-# 4) Construcción del payload
-payload = {
-    "model": MODEL,
-    "messages": messages,
-    "stream": False, # Decision: False = respuesta completa en un único JSON; más simple para acceder a 'message.content'.
-    "options": {"temperature": 0.2} # Decision: temp baja para respuestas más deterministas.
-}
+def build_payload(model: str):
+    # 4) Construcción del payload
+    return {
+        "model": model,
+        "messages": messages,
+        "stream": False,
+        # Decision: False = respuesta completa en un único JSON; más simple para acceder a 'message.content'.
+        "options": {"temperature": 0.2}  # Decision: temp baja para respuestas más deterministas.
+    }
+
+def parse_args():
+    # Decision: argparse da UX clara y validación básica de argumentos.
+    p = argparse.ArgumentParser(description="Invoca Ollama vía HTTP (requests).")
+    p.add_argument("--model", default=MODEL, help="Modelo a usar (por defecto: llama3.2)")
+    p.add_argument("--outfile", default=None, help="Ruta de salida .txt (si no se indica, usa timestamp).")
+    return p.parse_args()
+
+
 # 5) Envío de la petición y manejo de errores
 def main():
+    args = parse_args()
+    payload= build_payload(args.model)
+
+    t0=time.perf_counter() #Extra: medir duracion total de la llamada
     try:
         # Decision: timeout para evitar bloqueos si el servidor no responde.
         resp = requests.post(OLLAMA_API, json=payload, headers=HEADERS,timeout=120)
@@ -34,7 +49,20 @@ def main():
 
         data = resp.json() # Decision: la API devuelve JSON.
 
-        print(data["message"]["content"])# Decision: con stream=False, el texto vive en data["message"]["content"].
+        # Decision: cuando el modelo no existe/no esta descargado, Ollama puede devolver {"error": "..."} con 200.
+        if isinstance(data, dict) and "error" in data:
+            raise  RuntimeError(f"Ollama informo de un error: {data['error']}")
+
+        # Decisión: con stream=False, el texto vive en data["message"]["content"].
+        texto= data["message"]["content"]
+        print(texto)
+
+        # Extra: guardado con marca temporal y modelo en el nombre.
+        ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+        outname = args.outfile or f"salida_prueba_a_{args.model}_{ts}.txt"
+        with open(outname, "w", encoding="utf-8") as f:
+            f.write(texto)
+        print(f"[INFO] Guardado en: {outname}")
 
     except requests.exceptions.ConnectionError as e:
         # Error 1: servidor no disponible.
@@ -50,5 +78,9 @@ def main():
         # Formato inesperado (p. ej., se activo stream=True por error o cambio la API).
         print("[ERROR] Formato JSON inesperado. Asegúrate de usar stream=False y el endpoint '/api/chat'.")
         print(e)
+
+    finally:
+        t1=time.perf_counter()
+        print(f"[INFO] Duracion total: {t1-t0:.2f} segundos.")
 if __name__ == "__main__":
     main()
